@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LATTICE | Advanced 3D Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <!--    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-dark: #050505;
+            --bg-darker: #030303;
+            --primary: #00e7ff;
+            --primary-dark: #00b8cc;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #e5e5e5;
+            scroll-behavior: smooth;
+        }
+
+        .dark-gradient {
+            background: linear-gradient(180deg, var(--bg-dark) 0%, #111111 100%);
+        }
+
+        .model-card {
+            background: rgba(20, 20, 22, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .model-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -10px rgba(0, 231, 255, 0.2);
+            border-color: rgba(0, 231, 255, 0.3);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 231, 255, 0.5);
+        }
+
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, rgba(40, 40, 45, 0) 0%, rgba(40, 40, 45, 0.8) 50%, rgba(40, 40, 45, 0) 100%);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .nav-bar {
+            background: rgba(10, 10, 12, 0.9);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-glow {
+            transition: all 0.3s ease;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px -3px rgba(0, 231, 255, 0.4);
+        }
+
+        .filter-btn {
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active {
+            background: rgba(0, 231, 255, 0.1);
+            border-color: rgba(0, 231, 255, 0.5);
+            color: var(--primary);
+        }
+
+        .pagination-btn {
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(.disabled) {
+            background: rgba(0, 231, 255, 0.1);
+            border-color: rgba(0, 231, 255, 0.3);
+        }
+
+        .pagination-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .model-viewer-container {
+            --poster-color: transparent;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: var(--bg-darker);
+            border-radius: 12px;
+            max-width: 90%;
+            width: 1200px;
+            margin: 2rem auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 231, 255, 0.25);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-modal:hover {
+            color: var(--primary);
+        }
+
+        /* View mode buttons */
+        .view-mode-btn {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .view-mode-btn button {
+            background: rgba(20, 20, 22, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-mode-btn button:hover {
+            background: rgba(0, 231, 255, 0.2);
+            border-color: rgba(0, 231, 255, 0.5);
+        }
+
+        .view-mode-btn button.active {
+            background: rgba(0, 231, 255, 0.3);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 231, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 231, 255, 0.5);
+        }
+
+        /* Model comparison layout */
+        .model-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 600px;
+        }
+
+        .model-viewport {
+            position: relative;
+            height: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 1024px) {
+            .model-comparison {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        .feature-tab {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .feature-tab.active {
+            background: rgba(0, 231, 255, 0.1);
+            border-color: rgba(0, 231, 255, 0.5);
+            color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 231, 255, 0.2);
+        }
+
+        .case-selector.active {
+            border-color: var(--primary);
+            background: rgba(0, 231, 255, 0.05);
+        }
+
+        .tab-content {
+            animation: fadeIn 0.4s ease-out;
+        }
+    </style>
+
+    <style>
+        /* Add these styles */
+        .scaling-tab {
+            transition: all 0.3s ease;
+        }
+
+        .scaling-tab.active {
+            background: linear-gradient(135deg, #00e7ff22, #0099ff22);
+            color: #00e7ff;
+            box-shadow: 0 0 15px rgba(0, 231, 255, 0.2);
+        }
+
+        .curve-container {
+            background: rgba(20, 20, 22, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        #scaling-curve {
+            animation: drawCurve 2s ease-out forwards;
+        }
+
+        @keyframes drawCurve {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .curve-points circle {
+            filter: drop-shadow(0 0 4px rgba(0, 231, 255, 0.5));
+            transition: all 0.3s ease;
+        }
+
+        /* 新增样式 */
+        #curve-tooltip {
+            position: absolute;
+            background: rgba(20, 25, 30, 0.95);
+            color: #00e7ff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(0, 231, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        #curve-tooltip.visible {
+            opacity: 1;
+        }
+
+        #curve-tooltip-fix {
+            position: absolute;
+            background: rgba(20, 25, 30, 0.95);
+            color: #00e7ff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(0, 231, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        #curve-tooltip-fix.visible {
+            opacity: 1;
+        }
+
+        .scaling-point {
+            transition: all 0.3s ease;
+        }
+
+        /* 新增样式 */
+        .meta-info {
+            background: rgba(20, 25, 30, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .opacity-50 {
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+    </style>
+
+
+    <style>
+        /* Add to existing styles */
+        .shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shimmer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(0, 231, 255, 0.2),
+                    transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            100% {
+                left: 200%;
+            }
+        }
+
+        .model-viewport {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .model-viewport:hover {
+            box-shadow: 0 0 30px rgba(0, 231, 255, 0.1);
+            border-color: rgba(0, 231, 255, 0.3);
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar fixed w-full z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center space-x-8">
+                    <div class="hidden md:flex space-x-6">
+                        <a href="#" class="text-white text-sm font-medium transition-all duration-300">LATTICE</a>
+                        <a href="natex.html"
+                            class="text-gray-400 text-sm font-medium transition-all duration-300 hover:text-cyan-400 ">NaTex</a>
+                        <a href="https://github.com/Tencent-Hunyuan/FlashVDM"
+                            class="text-gray-400 text-sm font-medium transition-all duration-300 hover:text-cyan-400 ">FlashVDM</a>
+                    </div>
+                </div>
+                <a href="https://3d.hunyuan.tencent.com/" target="_blank" rel="noopener noreferrer">
+                    <button
+                        class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-2 rounded-full text-sm font-medium btn-glow transform transition-transform duration-300 hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/50">
+                        Try Now
+                    </button>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- Hero Section -->
+    <section id="overview" class="dark-gradient pt-32 pb-24 px-6">
+        <div class="max-w-6xl mx-auto text-center fade-in">
+            <span class="text-cyan-400 text-sm font-medium tracking-widest mb-4 inline-block">INTRODUCING</span>
+
+            <h1 class="text-5xl md:text-7xl font-bold mb-4 tracking-tight neon-text">LATTICE</h1>
+
+            <!-- Subtitle -->
+            <p class="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Democratize High-Fidelity 3D Generation at Scale
+            </p>
+
+            <br>
+            <!-- Authors -->
+            <p class="text-gray-300 text-base md:text-sm leading-relaxed mb-2">
+                Zeqiang Lai<sup>1,2★</sup>, Yunfei Zhao<sup>2★</sup>,
+                Zibo Zhao<sup>2</sup>, Haolin Liu<sup>2</sup><br>
+                Qingxiang Lin<sup>2</sup>, Jingwei Huang<sup>2</sup>,
+                Chunchao Guo<sup>2†</sup>, Xiangyu Yue<sup>1†</sup>
+            </p>
+
+            <!-- Affiliations -->
+            <p class="text-gray-400 text-sm md:text-base mb-2">
+                <sup>1</sup>MMLab, CUHK &nbsp;&nbsp;·&nbsp;&nbsp;
+                <sup>2</sup>Tencent Hunyuan
+            </p>
+
+            <!-- Footnote -->
+            <p class="text-gray-500 text-xs md:text-sm mb-6">
+                ★ Equal contribution &nbsp;&nbsp;† Corresponding authors
+            </p>
+
+
+            <!-- Buttons -->
+            <div class="flex flex-wrap justify-center gap-3 mt-12">
+                <div class="relative inline-block text-left">
+                    <button id="dropdownButton"
+                        class="bg-transparent hover:bg-gray-800 text-white px-8 py-3 rounded-full text-lg font-medium border border-gray-700 btn-glow flex items-center space-x-2">
+                        <span>Technical Reports</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="dropdownMenu"
+                        class="hidden absolute left-0 mt-2 w-56 rounded-xl bg-gray-900 border border-gray-700 shadow-lg">
+                        <a href="https://lattice3d.github.io" target="_blank"
+                            class="block px-5 py-3 text-gray-200 hover:bg-gray-800 rounded-t-xl">
+                            LATTICE
+                        </a>
+                        <a href="https://arxiv.org/abs/2506.16504" target="_blank"
+                            class="block px-5 py-3 text-gray-200 hover:bg-gray-800">
+                            Hunyuan3D 2.5
+                        </a>
+                        <a href="https://github.com/Zeqiang-Lai/LATTICE/blob/main/assets/Hunyuan3D_3_0_System_Card.pdf"
+                            target="_blank" class="block px-5 py-3 text-gray-200 hover:bg-gray-800 rounded-b-xl">
+                            Hunyuan3D 3.0
+                        </a>
+                    </div>
+                </div>
+                <script>
+                    const dropdownButton = document.getElementById("dropdownButton");
+                    const dropdownMenu = document.getElementById("dropdownMenu");
+
+                    dropdownButton.addEventListener("click", () => {
+                        dropdownMenu.classList.toggle("hidden");
+                    });
+
+                    // 点击菜单外部关闭
+                    window.addEventListener("click", (e) => {
+                        if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                            dropdownMenu.classList.add("hidden");
+                        }
+                    });
+                </script>
+                <a href="https://github.com/Zeqiang-Lai/LATTICE" target="_blank"
+                    class="flex items-center bg-gray-800 hover:bg-gray-700 text-white px-8 py-3 rounded-full text-lg font-medium border border-gray-700 btn-glow">
+                    <i class="fab fa-github mr-2 text-xl"></i> GitHub
+                </a>
+                <a href="#models"
+                    class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-3 rounded-full text-lg font-medium btn-glow">
+                    Browse Models <i class="fas fa-arrow-down ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Image Showcase -->
+    <section id="showcase" class="py-20 bg-black px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="mb-12 fade-in">
+                <!-- <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white">Image Showcase</h2> -->
+                <p class="text-gray-400 text-lg">"The <span class="text-white font-medium">foundation model</span>
+                    behind Hunyuan3D 2.5 and 3.0."</p>
+            </div>
+
+            <!-- Image Container -->
+            <div class="relative fade-in">
+                <img id="showcase-image" src="statics/images/lattice2.png" alt="Showcase Image"
+                    class="w-full rounded-2xl shadow-xl object-cover transition-all duration-500">
+
+                <!-- Left Button -->
+                <button id="prev-btn"
+                    class="absolute left-0 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition">
+                    &#10094;
+                </button>
+
+                <!-- Right Button -->
+                <button id="next-btn"
+                    class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition">
+                    &#10095;
+                </button>
+            </div>
+
+            <!-- Dots Indicator -->
+            <div class="flex justify-center mt-6 space-x-2">
+                <span class="dot w-3 h-3 rounded-full bg-gray-500"></span>
+                <span class="dot w-3 h-3 rounded-full bg-gray-700"></span>
+                <span class="dot w-3 h-3 rounded-full bg-gray-700"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- VoxSet Representation Section -->
+    <section id="voxset" class="py-24 bg-black px-6">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <!-- Left Text Content -->
+            <div class="fade-in text-left space-y-6">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">VoxSet Representation</h2>
+                <p class="text-gray-400 text-lg leading-relaxed">
+                    VoxSet is a novel 3D representation that unifies voxel regularity with the flexibility of set-based
+                    models.
+                    It encodes geometry in a structured sparse format, enabling both efficient scaling
+                    and precise local detail.
+                </p>
+                <p class="text-gray-400 text-lg leading-relaxed">
+                    This hybrid design allows the system to benefit from predictable scaling laws and consistent
+                    test-time improvements,
+                    bridging the gap between generated and handcrafted 3D assets.
+                </p>
+            </div>
+
+            <!-- Right Image -->
+            <div class="fade-in relative">
+                <img src="statics/images/voxset_illustration2.jpg" alt="VoxSet Representation Diagram"
+                    class="w-full rounded-2xl shadow-xl object-cover transition-all duration-500">
+            </div>
+        </div>
+    </section>
+
+    <!-- Pipeline Section -->
+    <section id="pipeline" class="py-24 bg-black px-6">
+        <div class="max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12 fade-in">
+
+            <!-- Left Text -->
+            <div class="lg:w-2/5 text-center lg:text-left">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">Scalable 3D Generative Modeling</h2>
+                <p class="text-gray-400 text-lg leading-relaxed mb-8">
+                    Our generation pipeline adopts a two-stage strategy. The first stage generates a coarse structure
+                    with any off-the-shelf 3D Generator such as <span
+                        class="text-purple-400 font-medium">Hunyuan3D-2</span>,
+                    and the second stage generate the detailed geometry via <span
+                        class="text-cyan-400 font-medium">LATTICE</span>.
+                </p>
+                <p class="text-gray-500 text-sm">
+                    Each latent in VoxSet is anchored to a 3D voxel grid, allowing direct positional embedding into the
+                    diffusion transformer for stronger spatial guidance and better model scaling.
+                </p>
+            </div>
+
+            <!-- Right Flowchart (Horizontal) -->
+            <div class="lg:w-3/5 w-full flex items-center justify-center space-x-6 overflow-x-auto px-2">
+                <!-- Stage 1 -->
+                <div class="w-2/5 min-w-[220px] flex-shrink-0">
+                    <div
+                        class="p-6 bg-gray-900 rounded-2xl border border-gray-800 hover:border-purple-400 transition-all">
+                        <div class="mb-6">
+                            <div class="inline-flex items-center gap-2 px-4 py-2 bg-purple-900/20 rounded-full mb-4">
+                                <i class="fas fa-cube text-purple-400"></i>
+                                <span class="text-purple-400 text-sm font-medium">Stage 1</span>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2">Coarse Structure Generation</h3>
+                            <p class="text-sm text-gray-400 mb-4">Powered by <span
+                                    class="text-purple-400">Hunyuan3D-2</span></p>
+                        </div>
+                        <div class="model-viewport aspect-square rounded-xl overflow-hidden">
+                            <model-viewer id="stage1-model" src="statics/two_stages/stage1.glb" camera-controls
+                                auto-rotate shadow-intensity="0.8" exposure="1.0" environment-image="legacy"
+                                disable-zoom touch-action="pan-y"
+                                style="width: 100%; height: 100%; background-color: #1a1a1a;">
+                            </model-viewer>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="flex-shrink-0">
+                    <i class="fas fa-arrow-right text-2xl text-cyan-400"></i>
+                </div>
+
+                <!-- Stage 2 -->
+                <div class="w-2/5 min-w-[220px] flex-shrink-0">
+                    <div
+                        class="p-6 bg-gray-900 rounded-2xl border border-gray-800 hover:border-cyan-400 transition-all">
+                        <div class="mb-6">
+                            <div class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-900/20 rounded-full mb-4">
+                                <i class="fas fa-palette text-cyan-400"></i>
+                                <span class="text-cyan-400 text-sm font-medium">Stage 2</span>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2">Detailed Geometry Generation</h3>
+                            <p class="text-sm text-gray-400 mb-4">Powered by <span class="text-cyan-400">LATTICE</span>
+                            </p>
+                        </div>
+                        <div class="model-viewport aspect-square rounded-xl overflow-hidden">
+                            <model-viewer id="stage2-model" src="statics/two_stages/stage2.glb" camera-controls
+                                auto-rotate shadow-intensity="1.0" exposure="1.4" environment-image="legacy"
+                                disable-zoom touch-action="pan-y"
+                                style="width: 100%; height: 100%; background-color: #1a1a1a;">
+                            </model-viewer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Custom Material Setup -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modelViewer = document.querySelector('#stage2-model');
+
+            modelViewer.addEventListener('load', () => {
+                const material = modelViewer.model.materials[0];
+                const color = [53, 54, 56, 255].map((x) => x / 255);
+                material.pbrMetallicRoughness.setMetallicFactor(0.1);
+                material.pbrMetallicRoughness.setRoughnessFactor(0.7);
+                material.pbrMetallicRoughness.setBaseColorFactor(color);
+            });
+
+            const modelViewer2 = document.querySelector('#stage1-model');
+
+            modelViewer2.addEventListener('load', () => {
+                const material = modelViewer2.model.materials[0];
+                const color = [53, 54, 56, 255].map((x) => x / 255);
+                material.pbrMetallicRoughness.setMetallicFactor(0.1);
+                material.pbrMetallicRoughness.setRoughnessFactor(0.7);
+                material.pbrMetallicRoughness.setBaseColorFactor(color);
+            });
+        });
+    </script>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-black px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">Highlight Features</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg">
+                    Explore the key features that make LATTICE stand out in 3D generation
+                </p>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="flex justify-center mb-12 space-x-4">
+                <button class="feature-tab px-6 py-3 rounded-full border border-gray-700 text-sm font-medium active"
+                    data-tab="detail">
+                    Geometric Details
+                </button>
+                <button class="feature-tab px-6 py-3 rounded-full border border-gray-700 text-sm font-medium"
+                    data-tab="sharp">
+                    Sharp Edges
+                </button>
+                <button class="feature-tab px-6 py-3 rounded-full border border-gray-700 text-sm font-medium"
+                    data-tab="smooth">
+                    Smooth Surface
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8">
+                <!-- Left Column - Text Content -->
+                <div class="flex-1 space-y-6">
+                    <div class="tab-content active" data-tab="detail">
+                        <h3 class="text-2xl font-bold mb-4">Ultimate Geometry Details</h3>
+                        <p class="text-gray-300 mb-6">
+                            The model achieves a level of accuracy approaching that of handcrafted designs, such as the
+                            correct number of fingers, the detailed bicycle wheel pattern, and even a bowl within a
+                            large scene.
+                        </p>
+                        <div class="space-y-3">
+                            <div class="case-selector cursor-pointer p-4 rounded-lg border border-gray-700 hover:border-cyan-400 transition-all"
+                                data-model="angle">
+                                <h4 class="text-white font-medium mb-2">Robot</h4>
+                                <p class="text-gray-400 text-sm">Tiny and subtle decorations</p>
+                            </div>
+                            <div class="case-selector cursor-pointer p-4 rounded-lg border border-gray-700 hover:border-cyan-400 transition-all"
+                                data-model="gear">
+                                <h4 class="text-white font-medium mb-2">Vehicle</h4>
+                                <p class="text-gray-400 text-sm">Complex details</p>
+                            </div>
+                            <div class="case-selector cursor-pointer p-4 rounded-lg border border-gray-700 hover:border-cyan-400 transition-all"
+                                data-model="leaf">
+                                <h4 class="text-white font-medium mb-2">Soldier</h4>
+                                <p class="text-gray-400 text-sm">Correct number of fingers</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content hidden" data-tab="sharp">
+                        <h3 class="text-2xl font-bold mb-4">Crisp Edge Preservation</h3>
+                        <p class="text-gray-300 mb-6">
+                            Maintain sharp features and clean edges even in complex topology scenarios.
+                        </p>
+                        <div class="space-y-3">
+                            <div class="case-selector cursor-pointer p-4 rounded-lg border border-gray-700 hover:border-cyan-400 transition-all"
+                                data-model="crystal">
+                                <h4 class="text-white font-medium mb-2">Weapon</h4>
+                                <p class="text-gray-400 text-sm">Sharp edges</p>
+                            </div>
+                            <div class="case-selector cursor-pointer p-4 rounded-lg border border-gray-700 hover:border-cyan-400 transition-all"
+                                data-model="architecture">
+                                <h4 class="text-white font-medium mb-2">Game asset</h4>
+                                <p class="text-gray-400 text-sm">Clean edges</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content hidden" data-tab="smooth">
+                        <h3 class="text-2xl font-bold mb-4">Fluent & Smooth Surface</h3>
+                        <p class="text-gray-300 mb-6">
+                            Create smooth, flowing surfaces with perfect curvature continuity.
+                        </p>
+                        <div class="space-y-3">
+                            <div class="case-selector cursor-pointer p-4 rounded-lg border border-gray-700 hover:border-cyan-400 transition-all"
+                                data-model="vase">
+                                <h4 class="text-white font-medium mb-2">Real Character</h4>
+                                <p class="text-gray-400 text-sm">Smooth cloth</p>
+                            </div>
+                            <div class="case-selector cursor-pointer p-4 rounded-lg border border-gray-700 hover:border-cyan-400 transition-all"
+                                data-model="character">
+                                <h4 class="text-white font-medium mb-2">Carton Character</h4>
+                                <p class="text-gray-400 text-sm">Smooth and clean cloth</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Model Viewer -->
+                <div class="model-viewport h-[700px] rounded-xl overflow-hidden">
+                    <model-viewer id="feature-viewer" camera-controls auto-rotate shadow-intensity="0.5" exposure="1.0"
+                        interaction-prompt="none" environment-image="legacy" disable-zoom touch-action="pan-y"
+                        style="width: 100%; height: 100%; ">
+                    </model-viewer>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scaling Effect Section -->
+    <section id="scaling" class="py-20 bg-black px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12 fade-in">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">Scaling Laws for 3D Generation</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg">
+                    Explore how training and test-time scaling affect mesh quality.
+                </p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex justify-center mb-8">
+                <div class="bg-gray-900 rounded-full p-2 flex">
+                    <button class="scaling-tab px-6 py-2 rounded-full text-sm font-medium active" data-type="training">
+                        Training-Time Scaling
+                    </button>
+                    <button class="scaling-tab px-6 py-2 rounded-full text-sm font-medium" data-type="test">
+                        Test-Time Scaling
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Container -->
+            <div class="bg-gray-900/50 rounded-xl p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column - Curve Visualization -->
+                    <div class="curve-container relative h-96">
+                        <!-- SVG Canvas -->
+                        <svg class="w-full h-full" viewBox="0 0 500 300">
+                            <!-- Animated path -->
+                            <path id="scaling-curve" d="M50,250 C150,50 350,50 450,250" fill="none"
+                                stroke="rgba(0,231,255,0.3)" stroke-width="2" stroke-dasharray="1000"
+                                stroke-dashoffset="1000" />
+
+                            <!-- Interactive Points -->
+                            <g class="curve-points">
+                                <circle cx="50" cy="250" r="6" fill="#00e7ff"
+                                    class="cursor-pointer hover:r-8 transition-all"
+                                    data-model="5a823b14-cca9-4af3-b283-99176a85db88" />
+                                <circle cx="150" cy="150" r="6" fill="#00e7ff"
+                                    class="cursor-pointer hover:r-8 transition-all"
+                                    data-model="190cb648-a08e-4de7-8fd6-34594d246d61" />
+                                <circle cx="250" cy="100" r="6" fill="#00e7ff"
+                                    class="cursor-pointer hover:r-8 transition-all" data-model="model3" />
+                                <circle cx="450" cy="250" r="6" fill="#00e7ff"
+                                    class="cursor-pointer hover:r-8 transition-all" data-model="model4" />
+                            </g>
+                        </svg>
+
+                        <!-- Axis Labels -->
+                        <div class="absolute bottom-0 left-0 right-0 flex justify-between text-gray-400 text-sm px-4">
+                            <span>Low Compute</span>
+                            <span>High Compute</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Model Viewer -->
+                    <div class="model-viewport h-96 rounded-xl overflow-hidden border border-gray-800">
+                        <model-viewer id="scaling-viewer" camera-controls auto-rotate shadow-intensity="0.8"
+                            exposure="1.2" environment-image="legacy"
+                            style="width: 100%; height: 100%; background-color: #111;">
+                        </model-viewer>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="mt-8 flex justify-center gap-4">
+                    <div class="flex items-center text-sm text-gray-400">
+                        <!-- <div class="w-4 h-4 bg-cyan-500/20 rounded-sm mr-2"></div> -->
+                        Click points on the curve to view meshes.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <div class="section-divider my-16 max-w-4xl mx-auto"></div>
+
+    <!-- 3D Models Section -->
+    <section id="models" class="py-20 bg-black px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12 fade-in">
+                <h2 class="text-3xl md:text-4xl font-bold mb-6">Generated 3D Assets</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg">
+                    Browse, filter, and interact with generated 3D assets by Hunyuan3D 2.5.
+                </p>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="flex flex-wrap justify-center gap-3 mb-12 fade-in">
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium active"
+                    data-filter="all">
+                    All Models
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Animals">
+                    Animals
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Building">
+                    Building
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Characters">
+                    Characters
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Fingers">
+                    Fingers
+                </button>
+
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Plants">
+                    Plants
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Props">
+                    Props
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Robots">
+                    Robots
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Scenes">
+                    Scenes
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Texts">
+                    Texts
+                </button>
+
+                <button class="filter-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium"
+                    data-filter="Vehicles">
+                    Vehicles
+                </button>
+            </div>
+
+            <!-- Model Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12" id="model-grid">
+                <!-- Models will be loaded here by JavaScript -->
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex justify-center items-center gap-4 fade-in">
+                <button id="prev-page"
+                    class="pagination-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium disabled">
+                    <i class="fas fa-chevron-left mr-2"></i> Previous
+                </button>
+                <span class="text-gray-400 text-sm" id="page-info">Page 1 of 3</span>
+                <button id="next-page"
+                    class="pagination-btn px-4 py-2 rounded-full border border-gray-700 text-sm font-medium">
+                    Next <i class="fas fa-chevron-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal for detailed model view -->
+    <div id="model-modal" class="modal">
+        <span class="close-modal">&times;</span>
+        <div class="modal-content p-6" style="width: 1000px; height: 750px;">
+            <div class="flex h-full gap-6">
+                <!-- Left Column (3/4 width) - Model Viewer and Controls -->
+                <div class="w-3/4 h-full flex flex-col gap-4">
+                    <!-- Model Viewer (taking most of the height) -->
+                    <div class="model-viewport flex-grow">
+                        <model-viewer id="modal-viewer" camera-controls auto-rotate shadow-intensity="0.0"
+                            exposure="0.5" environment-image="neutral"
+                            style="width: 100%; height: 100%; background-color: transparent;">
+                        </model-viewer>
+                    </div>
+                    <!-- View Mode Buttons -->
+                    <div class="view-mode-btn flex justify-center gap-2">
+                        <!-- <button class="view-mode active" data-mode="textured">Textured</button> -->
+                        <button class="view-mode active" data-mode="Legacy">Legacy</button>
+                        <button class="view-mode" data-mode="Normal">Normal</button>
+                        <button class="view-mode" data-mode="Gradient">Gradient</button>
+                        <button class="view-mode" data-mode="Neutral">Neutral</button>
+                    </div>
+                </div>
+
+                <!-- Right Column (1/4 width) - Reference Image and Details -->
+                <div class="w-1/4 h-full flex flex-col gap-4">
+                    <!-- Reference Image (fixed height) -->
+                    <div class="reference-image-container" style="height: 40%;">
+                        <img id="reference-image" src="" alt="Reference"
+                            class="w-full h-full object-contain rounded-lg">
+                    </div>
+
+                    <!-- Model Details (remaining height) -->
+                    <div class="model-details flex-grow overflow-y-auto">
+                        <h2 id="modal-title" class="text-2xl font-bold mb-3 text-white"></h2>
+                        <p id="modal-description" class="text-gray-300 mb-4 text-sm"></p>
+
+                        <div class="mb-4">
+                            <h3 class="text-md font-semibold text-white mb-2">Model Details</h3>
+                            <div class="grid grid-cols-1 gap-2 text-xs">
+                                <div>
+                                    <p class="text-gray-400">Category</p>
+                                    <p id="modal-category" class="text-white"></p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Polygons</p>
+                                    <p id="modal-polygons" class="text-white"></p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Textures</p>
+                                    <p id="modal-textures" class="text-white"></p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400">Materials</p>
+                                    <p id="modal-materials" class="text-white"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700
+                                text-white px-4 py-2 rounded-full text-xs font-medium btn-glow mt-auto">
+                            Download Model <i class="fas fa-download ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- CTA Section -->
+    <section class="py-24 bg-gradient-to-b from-black to-gray-900 px-6">
+        <div class="max-w-4xl mx-auto text-center fade-in">
+            <h2 class="text-3xl md:text-4xl font-bold mb-8">Ready to Elevate Your 3D Experience?</h2>
+            <p class="text-gray-400 text-xl mb-10 max-w-2xl mx-auto">
+                Access our complete online creation platform.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="https://3d.hunyuan.tencent.com/" target="_blank" rel="noopener noreferrer">
+                    <button
+                        class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-medium btn-glow">
+                        Get Started <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </a>
+            </div>
+        </div>
+    </section>
+
+
+    <script src="statics/js/features.js"></script>
+    <script src="statics/js/scaling.js"></script>
+    <script src="statics/js/model_zoo.js"></script>
+    <script src="statics/js/zoo.js"></script>
+
+    <script>
+        const images = [
+            "statics/images/lattice2.png",
+            "statics/images/lattice.png",
+            "statics/images/hy30.jpg",
+        ];
+
+        let current = 0;
+        const imgElement = document.getElementById("showcase-image");
+        const dots = document.querySelectorAll(".dot");
+
+        function updateShowcase() {
+            imgElement.src = images[current];
+            dots.forEach((d, i) => {
+                d.classList.toggle("bg-gray-500", i === current);
+                d.classList.toggle("bg-gray-700", i !== current);
+            });
+        }
+
+        document.getElementById("prev-btn").addEventListener("click", () => {
+            current = (current - 1 + images.length) % images.length;
+            updateShowcase();
+        });
+
+        document.getElementById("next-btn").addEventListener("click", () => {
+            current = (current + 1) % images.length;
+            updateShowcase();
+        });
+    </script>
+</body>
+
+</html>
